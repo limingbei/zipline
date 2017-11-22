@@ -24,6 +24,7 @@ from os.path import (
     join,
 )
 from distutils.version import StrictVersion
+from functools import partial
 from setuptools import (
     Extension,
     find_packages,
@@ -32,10 +33,23 @@ from setuptools import (
 
 import versioneer
 
+try:
+    import Cython
+except ImportError:
+    raise Exception("Install Cython before zipline.")
+
+try:
+    import numpy as np
+except ImportError:
+    raise Exception("Install numpy before zipline.")
+
+
+NumpyExtension = partial(Extension, include_dirs=[np.get_include()])
+
 
 def window_specialization(typename):
     """Make an extension for an AdjustedArrayWindow specialization."""
-    return Extension(
+    return NumpyExtension(
         'zipline.lib._{name}window'.format(name=typename),
         ['zipline/lib/_{name}window.pyx'.format(name=typename)],
         depends=['zipline/lib/_windowtemplate.pxi'],
@@ -43,34 +57,35 @@ def window_specialization(typename):
 
 
 ext_modules = [
-    Extension('zipline.assets._assets', ['zipline/assets/_assets.pyx']),
-    Extension('zipline.assets.continuous_futures',
+    NumpyExtension('zipline.assets._assets', ['zipline/assets/_assets.pyx']),
+    NumpyExtension('zipline.assets.continuous_futures',
               ['zipline/assets/continuous_futures.pyx']),
-    Extension('zipline.lib.adjustment', ['zipline/lib/adjustment.pyx']),
-    Extension('zipline.lib._factorize', ['zipline/lib/_factorize.pyx']),
+    NumpyExtension('zipline.lib.adjustment', ['zipline/lib/adjustment.pyx']),
+    NumpyExtension('zipline.lib._factorize', ['zipline/lib/_factorize.pyx']),
     window_specialization('float64'),
     window_specialization('int64'),
     window_specialization('int64'),
     window_specialization('uint8'),
     window_specialization('label'),
-    Extension('zipline.lib.rank', ['zipline/lib/rank.pyx']),
-    Extension('zipline.data._equities', ['zipline/data/_equities.pyx']),
-    Extension('zipline.data._adjustments', ['zipline/data/_adjustments.pyx']),
+    NumpyExtension('zipline.lib.rank', ['zipline/lib/rank.pyx']),
+    NumpyExtension('zipline.data._equities', ['zipline/data/_equities.pyx']),
+    NumpyExtension('zipline.data._adjustments',
+                   ['zipline/data/_adjustments.pyx']),
     Extension('zipline._protocol', ['zipline/_protocol.pyx']),
-    Extension('zipline.gens.sim_engine', ['zipline/gens/sim_engine.pyx']),
-    Extension(
+    NumpyExtension('zipline.gens.sim_engine', ['zipline/gens/sim_engine.pyx']),
+    NumpyExtension(
         'zipline.data._minute_bar_internal',
         ['zipline/data/_minute_bar_internal.pyx']
     ),
-    Extension(
+    NumpyExtension(
         'zipline.utils.calendars._calendar_helpers',
         ['zipline/utils/calendars/_calendar_helpers.pyx']
     ),
-    Extension(
+    NumpyExtension(
         'zipline.data._resample',
         ['zipline/data/_resample.pyx']
     ),
-    Extension(
+    NumpyExtension(
         'zipline.pipeline.loaders.blaze._core',
         ['zipline/pipeline/loaders/blaze/_core.pyx'],
         depends=['zipline/lib/adjustment.pxd'],
