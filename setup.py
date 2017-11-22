@@ -33,18 +33,24 @@ from setuptools import (
 
 import versioneer
 
-try:
-    import Cython
-except ImportError:
-    raise Exception("Install Cython before zipline.")
 
-try:
-    import numpy as np
-except ImportError:
-    raise Exception("Install numpy before zipline.")
+conda_build = os.path.basename(sys.argv[0]) in ('conda-build',  # unix
+                                                'conda-build-script.py')  # win
 
+if conda_build:
+    NumpyExtension = Extension
+else:
+    try:
+        import Cython
+    except ImportError:
+        raise Exception("Install Cython before zipline.")
 
-NumpyExtension = partial(Extension, include_dirs=[np.get_include()])
+    try:
+        import numpy as np
+    except ImportError:
+        raise Exception("Install numpy before zipline.")
+
+    NumpyExtension = partial(Extension, include_dirs=[np.get_include()])
 
 
 def window_specialization(typename):
@@ -239,9 +245,6 @@ def setup_requirements(requirements_path, module_names, strict_bounds,
         )
     return module_lines
 
-
-conda_build = os.path.basename(sys.argv[0]) in ('conda-build',  # unix
-                                                'conda-build-script.py')  # win
 
 setup_requires = setup_requirements(
     'etc/requirements.txt',
